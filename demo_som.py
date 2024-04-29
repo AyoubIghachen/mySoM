@@ -53,7 +53,8 @@ sam_ckpt = "./sam_vit_h_4b8939.pth"
 build model
 '''
 # model_semsam = BaseModel(opt_semsam, build_model(opt_semsam)).from_pretrained(semsam_ckpt).eval().cuda()
-model_sam = sam_model_registry["vit_h"](checkpoint=sam_ckpt).eval().cuda()
+# model_sam = sam_model_registry["vit_h"](checkpoint=sam_ckpt).eval().cuda()
+model_sam = sam_model_registry["vit_h"](checkpoint='/content/mySoM/sam_vit_h_4b8939.pth').eval().cuda()
 # model_seem = BaseModel_Seem(opt_seem, build_model_seem(opt_seem)).from_pretrained(seem_ckpt).eval().cuda()
 
 # with torch.no_grad():
