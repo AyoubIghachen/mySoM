@@ -12,24 +12,24 @@ import gradio as gr
 import torch
 import argparse
 from PIL import Image
-# seem
-from seem.modeling.BaseModel import BaseModel as BaseModel_Seem
-from seem.utils.distributed import init_distributed as init_distributed_seem
-from seem.modeling import build_model as build_model_seem
-from task_adapter.seem.tasks import interactive_seem_m2m_auto, inference_seem_pano, inference_seem_interactive
+# # seem
+# from seem.modeling.BaseModel import BaseModel as BaseModel_Seem
+# from seem.utils.distributed import init_distributed as init_distributed_seem
+# from seem.modeling import build_model as build_model_seem
+# from task_adapter.seem.tasks import interactive_seem_m2m_auto, inference_seem_pano, inference_seem_interactive
 
-# semantic sam
-from semantic_sam.BaseModel import BaseModel
-from semantic_sam import build_model
-from semantic_sam.utils.dist import init_distributed_mode
-from semantic_sam.utils.arguments import load_opt_from_config_file
-from semantic_sam.utils.constants import COCO_PANOPTIC_CLASSES
-from task_adapter.semantic_sam.tasks import inference_semsam_m2m_auto, prompt_switch
+# # semantic sam
+# from semantic_sam.BaseModel import BaseModel
+# from semantic_sam import build_model
+# from semantic_sam.utils.dist import init_distributed_mode
+# from semantic_sam.utils.arguments import load_opt_from_config_file
+# from semantic_sam.utils.constants import COCO_PANOPTIC_CLASSES
+# from task_adapter.semantic_sam.tasks import inference_semsam_m2m_auto, prompt_switch
 
 # sam
 from segment_anything import sam_model_registry
 from task_adapter.sam.tasks.inference_sam_m2m_auto import inference_sam_m2m_auto
-from task_adapter.sam.tasks.inference_sam_m2m_interactive import inference_sam_m2m_interactive
+# from task_adapter.sam.tasks.inference_sam_m2m_interactive import inference_sam_m2m_interactive
 
 
 from task_adapter.utils.visualizer import Visualizer
@@ -53,28 +53,28 @@ client = OpenAI()
 '''
 build args
 '''
-semsam_cfg = "configs/semantic_sam_only_sa-1b_swinL.yaml"
-seem_cfg = "configs/seem_focall_unicl_lang_v1.yaml"
+# semsam_cfg = "configs/semantic_sam_only_sa-1b_swinL.yaml"
+# seem_cfg = "configs/seem_focall_unicl_lang_v1.yaml"
 
-semsam_ckpt = "./swinl_only_sam_many2many.pth"
+# semsam_ckpt = "./swinl_only_sam_many2many.pth"
 sam_ckpt = "./sam_vit_h_4b8939.pth"
-seem_ckpt = "./seem_focall_v1.pt"
+# seem_ckpt = "./seem_focall_v1.pt"
 
-opt_semsam = load_opt_from_config_file(semsam_cfg)
-opt_seem = load_opt_from_config_file(seem_cfg)
-opt_seem = init_distributed_seem(opt_seem)
+# opt_semsam = load_opt_from_config_file(semsam_cfg)
+# opt_seem = load_opt_from_config_file(seem_cfg)
+# opt_seem = init_distributed_seem(opt_seem)
 
 
 '''
 build model
 '''
-model_semsam = BaseModel(opt_semsam, build_model(opt_semsam)).from_pretrained(semsam_ckpt).eval().cuda()
-model_sam = sam_model_registry["vit_h"](checkpoint=sam_ckpt).eval().cuda()
-model_seem = BaseModel_Seem(opt_seem, build_model_seem(opt_seem)).from_pretrained(seem_ckpt).eval().cuda()
+# model_semsam = BaseModel(opt_semsam, build_model(opt_semsam)).from_pretrained(semsam_ckpt).eval().cuda()
+model_sam = sam_model_registry["vit_h"](checkpoint='/content/mySoM/sam_vit_h_4b8939.pth').eval().cuda()
+# model_seem = BaseModel_Seem(opt_seem, build_model_seem(opt_seem)).from_pretrained(seem_ckpt).eval().cuda()
 
-with torch.no_grad():
-    with torch.autocast(device_type='cuda', dtype=torch.float16):
-        model_seem.model.sem_seg_head.predictor.lang_encoder.get_text_embeddings(COCO_PANOPTIC_CLASSES + ["background"], is_eval=True)
+# with torch.no_grad():
+#     with torch.autocast(device_type='cuda', dtype=torch.float16):
+#         model_seem.model.sem_seg_head.predictor.lang_encoder.get_text_embeddings(COCO_PANOPTIC_CLASSES + ["background"], is_eval=True)
 
 history_images = []
 history_masks = []
@@ -122,27 +122,27 @@ def inference(image, slider, mode, alpha, label_mode, anno_mode, *args, **kwargs
     with torch.autocast(device_type='cuda', dtype=torch.float16):
         semantic=False
 
-        if mode == "Interactive":
-            labeled_array, num_features = label(np.asarray(_mask))
-            spatial_masks = torch.stack([torch.from_numpy(labeled_array == i+1) for i in range(num_features)])
+        # if mode == "Interactive":
+        #     labeled_array, num_features = label(np.asarray(_mask))
+        #     spatial_masks = torch.stack([torch.from_numpy(labeled_array == i+1) for i in range(num_features)])
 
-        if model_name == 'semantic-sam':
-            model = model_semsam
-            output, mask = inference_semsam_m2m_auto(model, _image, level, text, text_part, text_thresh, text_size, hole_scale, island_scale, semantic, label_mode=label_mode, alpha=alpha, anno_mode=anno_mode, *args, **kwargs)
+        # if model_name == 'semantic-sam':
+        #     model = model_semsam
+        #     output, mask = inference_semsam_m2m_auto(model, _image, level, text, text_part, text_thresh, text_size, hole_scale, island_scale, semantic, label_mode=label_mode, alpha=alpha, anno_mode=anno_mode, *args, **kwargs)
 
-        elif model_name == 'sam':
+        if model_name == 'sam':
             model = model_sam
             if mode == "Automatic":
                 output, mask = inference_sam_m2m_auto(model, _image, text_size, label_mode, alpha, anno_mode)
-            elif mode == "Interactive":
-                output, mask = inference_sam_m2m_interactive(model, _image, spatial_masks, text_size, label_mode, alpha, anno_mode)
+            # elif mode == "Interactive":
+            #     output, mask = inference_sam_m2m_interactive(model, _image, spatial_masks, text_size, label_mode, alpha, anno_mode)
 
-        elif model_name == 'seem':
-            model = model_seem
-            if mode == "Automatic":
-                output, mask = inference_seem_pano(model, _image, text_size, label_mode, alpha, anno_mode)
-            elif mode == "Interactive":
-                output, mask = inference_seem_interactive(model, _image, spatial_masks, text_size, label_mode, alpha, anno_mode)
+        # elif model_name == 'seem':
+        #     model = model_seem
+        #     if mode == "Automatic":
+        #         output, mask = inference_seem_pano(model, _image, text_size, label_mode, alpha, anno_mode)
+        #     elif mode == "Interactive":
+        #         output, mask = inference_seem_interactive(model, _image, spatial_masks, text_size, label_mode, alpha, anno_mode)
 
         # convert output to PIL image
         history_masks.append(mask)

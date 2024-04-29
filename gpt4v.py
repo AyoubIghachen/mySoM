@@ -33,12 +33,22 @@ def prepare_inputs(message, image):
     base64_image = encode_image_from_pil(image)
 
     payload = {
-        "model": "gpt-4-vision-preview",
+        "model": "gpt-4-turbo",
+        # "model": "gpt-4-vision-preview",
         "messages": [
+        # {
+        #     "role": "system",
+        #     "content": [
+        #         metaprompt
+        #     ]
+        # },
         {
             "role": "system",
             "content": [
-                metaprompt
+                {
+                    "type": "text",
+                    "text": "You are an expert architectural drafter and you need to recognize the objects in the floor plan image."
+                }
             ]
         }, 
         {
@@ -57,7 +67,7 @@ def prepare_inputs(message, image):
             ]
         }
         ],
-        "max_tokens": 800
+        # "max_tokens": 800
     }
 
     return payload
